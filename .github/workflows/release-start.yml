@@ -1,0 +1,25 @@
+name: release-start
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+
+    steps:
+      - name: Get a current datetime string
+        id: datetime
+        run: echo "datetime=$(date '+%y%m%d-%H%M')" >> $GITHUB_OUTPUT
+      
+      - name: Checkout from develop branch
+        uses: actions/checkout@v3
+        with:
+          ref: develop
+      
+      - name: Create a release branch
+        run: |
+          pwd
+          git checkout -b release/rb-${{ steps.datetime.outputs.datetime }}
+          git push origin release/rb-${{ steps.datetime.outputs.datetime }}
+          echo done!
