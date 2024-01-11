@@ -1,0 +1,44 @@
+name: release-finish
+
+on:
+#   schedule:
+#     - cron: "10 15 * * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ssh-key: ${{ secrets.ACTION_TEST_SECRET }}
+          
+      - name: Clean git branches
+        run: git fetch --prune -f origin
+      
+      - name: Get a release branch
+        id: gitbranch
+        run: echo "gitbranch=`git branch -la | grep remotes/origin/release | head -1 | xargs | cut -d'/' -f3-4`" >> $GITHUB_OUTPUT
+      
+      - name: Merge to main & develop branch from release branch
+        if: contains(steps.gitbranch.outputs.gitbranch, 'release')
+        run: |
+          git config --global user.name "ordi-test-org"
+          git config --global user.email "ordi-test-org@github.com"
+          git checkout ${{ steps.gitbranch.outputs.gitbranch }}
+          git checkout main
+          git merge ${{ steps.gitbranch.outputs.gitbranch }} --no-edit
+          git push origin main
+          git checkout develop
+          git merge main --no-edit
+          git push origin develop
+          echo done!
+      
+      - name: Remove release branch
+        if: contains(steps.gitbranch.outputs.gitbranch, 'release')
+        run: |
+          git push -d origin ${{ steps.gitbranch.outputs.gitbranch }}
+          echo done!
